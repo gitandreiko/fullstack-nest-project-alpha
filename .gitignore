@@ -12,3 +12,7 @@ postgres-data
 .DS_Store
 npm-debug.log*
 docs
+
+# Local Codex project memory
+.codex/project-context.md
+.codex/work-rules.md
