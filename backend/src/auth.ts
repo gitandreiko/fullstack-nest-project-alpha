@@ -14,7 +14,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { AuthGuard, PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import { PrismaService } from './prisma.service';
+import { PrismaService } from './prisma/prisma.service';
 
 class LoginDto {
 	@IsEmail()
@@ -113,7 +113,7 @@ export class AuthController {
 		}),
 	],
 	controllers: [AuthController],
-	providers: [PrismaService, AuthService, JwtStrategy],
+	providers: [AuthService, JwtStrategy],
 	exports: [AuthService],
 })
 export class AuthModule {}

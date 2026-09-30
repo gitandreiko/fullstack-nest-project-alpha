@@ -1,13 +1,14 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth';
-import { PrismaService } from './prisma.service';
 import {
 	DocumentsController,
 	DocumentsService,
 	ProjectsController,
 	ProjectsService,
 } from './resources';
+
+import { PrismaModule } from './prisma/prisma.module';
 
 @Controller('health')
 class HealthController {
@@ -25,8 +26,9 @@ class HealthController {
 			isGlobal: true,
 		}),
 		AuthModule,
+		PrismaModule,
 	],
 	controllers: [HealthController, ProjectsController, DocumentsController],
-	providers: [PrismaService, ProjectsService, DocumentsService],
+	providers: [ProjectsService, DocumentsService],
 })
 export class AppModule {}
