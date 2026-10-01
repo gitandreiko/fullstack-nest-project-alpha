@@ -1,12 +1,19 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { AuthenticatedRequest } from './authenticated-request';
+import { DeleteAccountDto } from './dto/delete-account.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
-	constructor(private authService: AuthService) {}
+	constructor(private readonly authService: AuthService) {}
+
+	@Post('register')
+	register(@Body() dto: RegisterDto) {
+		return this.authService.register(dto);
+	}
 
 	@Post('login')
 	@HttpCode(200)
@@ -18,5 +25,11 @@ export class AuthController {
 	@Get('me')
 	me(@Req() request: AuthenticatedRequest) {
 		return this.authService.me(request.user.sub);
+	}
+
+	@UseGuards(AuthGuard('jwt'))
+	@Delete('me')
+	close(@Req() request: AuthenticatedRequest, @Body() dto: DeleteAccountDto) {
+		return this.authService.close(request.user.sub, dto);
 	}
 }

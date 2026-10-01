@@ -1,11 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
-	constructor(private prisma: PrismaService) {}
+	constructor(private readonly prisma: PrismaService) {}
+
+	private async ensureWorkspaceAccess(userId: string, workspaceId: string): Promise<void> {
+		const membership = await this.prisma.workspaceMember.findUnique({
+			where: {
+				userId_workspaceId: {
+					userId,
+					workspaceId,
+				},
+			},
+		});
+
+		if (!membership) {
+			throw new NotFoundException();
+		}
+	}
 
 	async ensureProjectAccess(id: string, userId: string) {
 		const project = await this.prisma.project.findUnique({
@@ -85,33 +100,33 @@ export class ProjectsService {
 		});
 	}
 
-	async create(userId: string, data: CreateProjectDto) {
-		const membership = await this.prisma.workspaceMember.findFirst({
-			where: {
-				userId,
-			},
-		});
-		if (!membership) {
-			throw new NotFoundException();
-		}
+	async create(userId: string, workspaceId: string, dto: CreateProjectDto) {
+		await this.ensureWorkspaceAccess(userId, workspaceId);
 
 		return this.prisma.project.create({
 			data: {
-				...data,
-				workspaceId: membership.workspaceId,
+				name: dto.name,
+				description: dto.description,
+				workspaceId,
 				createdById: userId,
 			},
 		});
 	}
 
-	async update(id: string, userId: string, data: UpdateProjectDto) {
+	async update(id: string, userId: string, dto: UpdateProjectDto) {
 		await this.ensureProjectAccess(id, userId);
+		if (dto.name === undefined && dto.description === undefined) {
+			throw new BadRequestException('At least one field is required');
+		}
 
 		return this.prisma.project.update({
 			where: {
 				id,
 			},
-			data,
+			data: {
+				name: dto.name,
+				description: dto.description,
+			},
 		});
 	}
 

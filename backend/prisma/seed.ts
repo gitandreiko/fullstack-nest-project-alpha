@@ -1,39 +1,61 @@
 import { DocumentStatus, PrismaClient, ProjectStatus, WorkspaceRole } from '@prisma/client';
+import type { User } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { readBcryptRounds } from '../src/password-rounds';
 
-const prisma = new PrismaClient();
+const demoPassword = 'password123';
+const demoUsers = [
+	['admin@example.com', 'Admin User'],
+	['member@example.com', 'Member User'],
+	['viewer@example.com', 'Viewer User'],
+	['other@example.com', 'Other User'],
+] as const;
 
-async function main() {
-	const existingUsers = await prisma.user.count();
-	if (existingUsers > 0) {
-		console.log(`Seed skipped: database already contains ${existingUsers} user(s)`);
-		return;
-	}
+export async function seedDemoUsers(prisma: PrismaClient): Promise<User[]> {
+	const rounds = readBcryptRounds(process.env.BCRYPT_ROUNDS);
+	const users: User[] = [];
 
-	const password = 'password123';
-	const users = [];
+	for (const [email, name] of demoUsers) {
+		const existingUser = await prisma.user.findUnique({
+			where: {
+				email,
+			},
+		});
 
-	for (const [email, name] of [
-		['admin@example.com', 'Admin User'],
-		['member@example.com', 'Member User'],
-		['viewer@example.com', 'Viewer User'],
-		['other@example.com', 'Other User'],
-	]) {
+		if (existingUser) {
+			if (existingUser.password === demoPassword) {
+				users.push(
+					await prisma.user.update({
+						where: {
+							id: existingUser.id,
+						},
+						data: {
+							password: await bcrypt.hash(demoPassword, rounds),
+						},
+					}),
+				);
+			} else {
+				users.push(existingUser);
+			}
+			continue;
+		}
+
 		users.push(
-			await prisma.user.upsert({
-				where: {
-					email,
-				},
-				update: {
-					password,
-				},
-				create: {
+			await prisma.user.create({
+				data: {
 					email,
 					name,
-					password,
+					password: await bcrypt.hash(demoPassword, rounds),
 				},
 			}),
 		);
 	}
+
+	return users;
+}
+
+export async function seedDatabase(prisma: PrismaClient): Promise<void> {
+	const users = await seedDemoUsers(prisma);
 
 	const roles = [
 		WorkspaceRole.OWNER,
@@ -116,4 +138,16 @@ async function main() {
 	console.log('Seed completed');
 }
 
-main().finally(() => prisma.$disconnect());
+async function main(): Promise<void> {
+	const prisma = new PrismaClient();
+
+	try {
+		await seedDatabase(prisma);
+	} finally {
+		await prisma.$disconnect();
+	}
+}
+
+if (require.main === module) {
+	void main();
+}
