@@ -1,15 +1,9 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-
-import {
-	DocumentsController,
-	DocumentsService,
-	ProjectsController,
-	ProjectsService,
-} from './resources';
-
-import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { DocumentsModule } from './documents/documents.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Controller('health')
 class HealthController {
@@ -28,8 +22,9 @@ class HealthController {
 		}),
 		AuthModule,
 		PrismaModule,
+		ProjectsModule,
+		DocumentsModule,
 	],
-	controllers: [HealthController, ProjectsController, DocumentsController],
-	providers: [ProjectsService, DocumentsService],
+	controllers: [HealthController],
 })
 export class AppModule {}
