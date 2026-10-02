@@ -29,7 +29,7 @@ export class AuthService {
 		private readonly jwt: JwtService,
 		config: ConfigService,
 	) {
-		this.rounds = readBcryptRounds(config.get<string>('BCRYPT_ROUNDS'));
+		this.rounds = readBcryptRounds(config.get<string>('BCRYPT_ROUNDS') || '12');
 	}
 
 	async register(dto: RegisterDto) {
