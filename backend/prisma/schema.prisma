@@ -9,9 +9,13 @@ datasource db {
 
 enum WorkspaceRole {
   OWNER
-  ADMIN
   MEMBER
   VIEWER
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 enum ProjectStatus {
@@ -42,6 +46,7 @@ model Workspace {
   name      String
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  status    WorkspaceStatus   @default(ACTIVE)
   members   WorkspaceMember[]
   projects  Project[]
 }

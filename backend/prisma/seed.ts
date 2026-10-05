@@ -64,12 +64,8 @@ export async function seedDatabase(prisma: PrismaClient) {
 		);
 	}
 
-	const roles = [
-		WorkspaceRole.OWNER,
-		WorkspaceRole.ADMIN,
-		WorkspaceRole.MEMBER,
-		WorkspaceRole.VIEWER,
-	];
+	const workspaceUsers = users.slice(0, 3);
+	const roles = [WorkspaceRole.OWNER, WorkspaceRole.MEMBER, WorkspaceRole.VIEWER];
 
 	for (let workspaceIndex = 0; workspaceIndex < 3; workspaceIndex++) {
 		const workspace = await prisma.workspace.upsert({
@@ -83,21 +79,21 @@ export async function seedDatabase(prisma: PrismaClient) {
 			},
 		});
 
-		for (let userIndex = 0; userIndex < users.length; userIndex++) {
+		for (let userIndex = 0; userIndex < workspaceUsers.length; userIndex++) {
 			await prisma.workspaceMember.upsert({
 				where: {
 					userId_workspaceId: {
-						userId: users[userIndex].id,
+						userId: workspaceUsers[userIndex].id,
 						workspaceId: workspace.id,
 					},
 				},
 				update: {
-					role: roles[(userIndex + workspaceIndex) % roles.length],
+					role: roles[userIndex],
 				},
 				create: {
-					userId: users[userIndex].id,
+					userId: workspaceUsers[userIndex].id,
 					workspaceId: workspace.id,
-					role: roles[(userIndex + workspaceIndex) % roles.length],
+					role: roles[userIndex],
 				},
 			});
 		}
@@ -114,7 +110,7 @@ export async function seedDatabase(prisma: PrismaClient) {
 					name: `${['Backend Platform', 'Product Knowledge', 'Internal Documentation'][projectIndex % 3]} ${projectIndex + 1}`,
 					description: 'Учебный production-like проект',
 					status: projectIndex % 9 === 0 ? ProjectStatus.ARCHIVED : ProjectStatus.ACTIVE,
-					createdById: users[(projectIndex + workspaceIndex) % users.length].id,
+					createdById: workspaceUsers[(projectIndex + workspaceIndex) % workspaceUsers.length].id,
 				},
 			});
 
@@ -127,7 +123,7 @@ export async function seedDatabase(prisma: PrismaClient) {
 					create: {
 						id: `seed-document-${workspaceIndex}-${projectIndex}-${documentIndex}`,
 						projectId: project.id,
-						authorId: users[(documentIndex + projectIndex) % users.length].id,
+						authorId: workspaceUsers[(documentIndex + projectIndex) % workspaceUsers.length].id,
 						title: `Document ${documentIndex + 1}: API and architecture`,
 						content:
 							`Учебный документ ${documentIndex + 1}. Архитектура, API, database migrations and deployment notes. `.repeat(
