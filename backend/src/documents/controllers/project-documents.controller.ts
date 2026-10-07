@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import { AuthenticatedRequest } from '../../auth/authenticated-request';
 import { JwtAuth } from '../../auth/decorators/jwt-auth.decorator';
 import { DocumentsService } from '../documents.service';
+import { CreateDocumentDto } from '../dto/create-document.dto';
 
 @JwtAuth()
 @Controller('projects/:projectId/documents')
@@ -16,9 +17,9 @@ export class ProjectDocumentsController {
 	@Post()
 	create(
 		@Param('projectId') projectId: string,
-		@Body() data: any,
+		@Body() dto: CreateDocumentDto,
 		@Req() request: AuthenticatedRequest,
 	) {
-		return this.documentsService.create(projectId, request.user.sub, data);
+		return this.documentsService.create(projectId, request.user.sub, dto);
 	}
 }

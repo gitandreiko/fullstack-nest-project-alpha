@@ -1,14 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { ProjectStatus } from '@prisma/client';
+import { AccessPolicyService } from '../access/access-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectAccessService } from './project-access.service';
 
 @Injectable()
 export class ProjectsService {
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly access: ProjectAccessService,
+		private readonly access: AccessPolicyService,
 	) {}
 
 	async list(userId: string) {
@@ -22,8 +23,20 @@ export class ProjectsService {
 		});
 	}
 
+	async listByWorkspace(workspaceId: string, userId: string) {
+		await this.access.requireWorkspace(userId, workspaceId, 'view', 'project');
+		return this.prisma.project.findMany({
+			where: { workspaceId },
+			include: {
+				_count: { select: { documents: true } },
+				createdBy: { select: { name: true } },
+			},
+			orderBy: { updatedAt: 'desc' },
+		});
+	}
+
 	async get(id: string, userId: string) {
-		const project = await this.access.ensureProjectAccess(id, userId);
+		const project = await this.access.requireProject(userId, id, 'view');
 		return this.prisma.project.findUnique({
 			where: { id: project.id },
 			include: {
@@ -36,7 +49,7 @@ export class ProjectsService {
 	}
 
 	async create(userId: string, workspaceId: string, dto: CreateProjectDto) {
-		await this.access.ensureWorkspaceAccess(workspaceId, userId);
+		await this.access.requireWorkspace(userId, workspaceId, 'create', 'project');
 
 		return this.prisma.project.create({
 			data: {
@@ -49,10 +62,10 @@ export class ProjectsService {
 	}
 
 	async update(id: string, userId: string, dto: UpdateProjectDto) {
+		await this.access.requireProject(userId, id, 'update');
 		if (dto.name === undefined && dto.description === undefined) {
 			throw new BadRequestException('At least one field is required');
 		}
-		await this.access.ensureProjectAccess(id, userId);
 
 		return this.prisma.project.update({
 			where: { id },
@@ -60,8 +73,16 @@ export class ProjectsService {
 		});
 	}
 
+	async archive(id: string, userId: string) {
+		await this.access.requireProject(userId, id, 'archive');
+		return this.prisma.project.update({
+			where: { id },
+			data: { status: ProjectStatus.ARCHIVED },
+		});
+	}
+
 	async remove(id: string, userId: string) {
-		await this.access.ensureProjectAccess(id, userId);
+		await this.access.requireProject(userId, id, 'delete');
 		return this.prisma.project.delete({ where: { id } });
 	}
 }

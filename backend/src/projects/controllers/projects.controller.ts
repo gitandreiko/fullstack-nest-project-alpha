@@ -28,6 +28,11 @@ export class ProjectsController {
 		return this.projectsService.update(projectId, request.user.sub, dto);
 	}
 
+	@Patch(':projectId/archive')
+	archive(@Param('projectId') projectId: string, @Req() request: AuthenticatedRequest) {
+		return this.projectsService.archive(projectId, request.user.sub);
+	}
+
 	@Delete(':projectId')
 	remove(@Param('projectId') projectId: string, @Req() request: AuthenticatedRequest) {
 		return this.projectsService.remove(projectId, request.user.sub);
