@@ -58,7 +58,10 @@ export class AccessPolicyService {
 	async requireDocument(userId: string, documentId: string, action: AccessAction) {
 		const document = await this.prisma.document.findUnique({
 			where: { id: documentId },
-			include: { project: { select: { workspaceId: true } } },
+			select: {
+				id: true,
+				project: { select: { workspaceId: true } },
+			},
 		});
 		if (!document) {
 			throw new NotFoundException();
