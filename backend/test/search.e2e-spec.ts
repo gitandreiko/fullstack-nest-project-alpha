@@ -252,13 +252,31 @@ describe('Task 3 PostgreSQL document search (e2e)', () => {
 		['fractional limit', { q: 'api', limit: 1.5 }],
 		['non-numeric limit', { q: 'api', limit: 'abc' }],
 		['empty limit instead of a missing limit', { q: 'api', limit: '' }],
+		['whitespace-only limit', { q: 'api', limit: '   ' }],
+		['array limit', { q: 'api', limit: ['1', '2'] }],
 		['negative offset', { q: 'api', offset: -1 }],
 		['offset above the maximum', { q: 'api', offset: 5001 }],
 		['fractional offset', { q: 'api', offset: 1.5 }],
 		['non-numeric offset', { q: 'api', offset: 'abc' }],
 		['empty offset instead of a missing offset', { q: 'api', offset: '' }],
+		['whitespace-only offset', { q: 'api', offset: '   ' }],
+		['array offset', { q: 'api', offset: ['0', '1'] }],
 	])('returns 400 for %s', async (_case, query) => {
 		await search(ownerToken, query).expect(400);
+	});
+
+	it('finds a short word inside a longer title', async () => {
+		const response = await search(ownerToken, { q: 'api' }).expect(200);
+		expect(response.body.map((result: SearchResult) => result.id)).toEqual(
+			expect.arrayContaining([
+				'task3-contract-exact',
+				'task3-contract-typo',
+				'task3-contract-case',
+			]),
+		);
+		expect(response.body.map((result: SearchResult) => result.id)).not.toContain(
+			'task3-content-only',
+		);
 	});
 
 	it('uses limit=20 and offset=0 when pagination parameters are absent', async () => {
